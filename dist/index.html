@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#075e60">
+  <meta name="description" content="NS 每日輸注量與日班、小夜班、大夜班流速試算。每袋 500 mL，支援 iPhone 主畫面與離線使用。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="NS 流速">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>NS 流速計算</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./calculator.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="NS 流速計算首頁">
+      <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3C9 7 5.5 11 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 11 15 7 12 3Z"/><path d="M9 15h6m-3-3v6"/></svg></span>
+      <span>NS 流速計算<small>INFUSION PLANNER</small></span>
+    </a>
+    <button class="icon-button" id="help-open" aria-label="計算公式與加入主畫面說明" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">0.9% NS <span>／</span> 每袋 500 mL</p><h1 id="page-title">接上新的每日目標。</h1><p class="intro-copy">輸入醫囑與變更時間，試算各班剩餘流速。</p></div>
+      <div class="day-pill"><span class="status-dot" aria-hidden="true"></span>08:00 → 隔日 08:00</div>
+    </section>
+
+    <div class="workspace">
+      <section class="inputs-section" aria-labelledby="inputs-title">
+        <h2 class="section-title" id="inputs-title"><span>01</span>輸入醫囑與時間</h2>
+        <div class="card input-card">
+          <div class="control">
+            <div class="control-heading"><label for="current-rate">目前流速</label><div class="value-unit"><output id="current-rate-value" for="current-rate">80</output><span>mL/hr</span></div></div>
+            <input id="current-rate" type="range" min="1" max="500" step="1" value="80" aria-describedby="current-rate-limits">
+            <div class="range-labels" id="current-rate-limits"><span>1 mL/hr</span><span>500 mL/hr</span></div>
+          </div>
+          <div class="control">
+            <div class="control-heading"><label for="target-bags">修正後總袋數</label><div class="value-unit"><output id="target-bags-value" for="target-bags">4</output><span>bag/day</span></div></div>
+            <input id="target-bags" type="range" min="0.5" max="24" step="0.5" value="4" aria-describedby="target-bags-limits">
+            <div class="range-labels" id="target-bags-limits"><span>0.5 袋</span><span>24 袋</span></div>
+            <p class="target-note">修正後每日目標 <strong id="target-volume">2,000</strong> mL</p>
+          </div>
+          <div class="control time-control">
+            <div class="control-heading"><label for="change-time">變更時間點</label><output id="change-time-value" for="change-time" class="time-value">12:00</output></div>
+            <input id="change-time" type="range" min="0" max="24" step="1" value="4" aria-describedby="change-time-limits time-remaining">
+            <div class="range-labels" id="change-time-limits"><span>08:00</span><span>隔日 08:00</span></div>
+            <div class="shift-timeline" aria-hidden="true"><span>日班</span><span>小夜班</span><span>大夜班</span><i id="time-marker"></i></div>
+            <p class="time-note" id="time-remaining">已經過 4 小時 · 尚餘 20 小時</p>
+          </div>
+        </div>
+        <p class="caption input-hint">修改以上輸入會清除各班手動設定，重新分配流速。</p>
+        <div class="install-card" id="install-card"><span class="install-symbol" aria-hidden="true">＋</span><div><strong>像 App 一樣開啟</strong><p>Safari 分享 → 加入主畫面</p></div><button class="text-button" id="install-help">查看步驟</button></div>
+      </section>
+
+      <div class="results-section">
+        <section aria-labelledby="progress-title">
+          <h2 class="section-title" id="progress-title"><span>02</span>目前輸注進度</h2>
+          <div class="card progress-card">
+            <div class="metric"><span>修正前總袋數</span><div><strong id="previous-bags">3.84</strong><small>bag/day</small></div></div>
+            <div class="metric"><span>目前已輸入劑量</span><div><strong id="infused-volume">320</strong><small>mL</small></div></div>
+            <div class="metric remaining-metric"><span>剩餘需輸入劑量</span><div><strong id="remaining-volume">1,680</strong><small>mL</small></div></div>
+            <div class="progress-track" role="progressbar" id="infusion-progress" aria-label="已輸入量佔修正後每日目標比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="16"><span id="infusion-progress-fill"></span></div>
+            <p class="caption" id="progress-description">已輸入 320 / 2,000 mL</p>
+          </div>
+          <div id="calculation-notice" class="notice" role="status" hidden></div>
+        </section>
+
+        <section class="shift-section" aria-labelledby="shifts-title">
+          <div class="section-heading"><h2 class="section-title" id="shifts-title"><span>03</span>各班剩餘流速</h2><button class="text-button" id="reset-rates" hidden>全部恢復自動</button></div>
+          <p class="caption shift-hint">調整某班後固定該班，其餘自動班別重新分配。</p>
+          <div id="shift-cards" class="shift-cards"></div>
+          <div id="allocation-notice" class="notice" role="status" hidden></div>
+        </section>
+
+        <section class="total-card" aria-labelledby="total-title">
+          <div class="total-top"><div><h2 id="total-title">總剩餘劑量</h2><div class="total-value"><strong id="planned-volume">1,680</strong><span>mL</span></div></div><span class="total-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span></div>
+          <p class="total-formula">各班整數流速 × 該班剩餘小時，再加總</p>
+          <div class="difference-row"><span>與剩餘目標差額</span><strong id="difference">0 mL</strong></div>
+          <p id="difference-description" class="total-detail">分配量與剩餘目標一致。</p>
+          <p id="daily-projection" class="total-detail">預計每日總輸入量 2,000 / 2,000 mL</p>
+        </section>
+      </div>
+    </div>
+
+    <footer><p>依已確認的醫囑試算；設定輸液設備前，請核對總量、流速與時間。</p><div class="footer-meta"><span id="offline-status" role="status">離線快取準備中</span><span>NS FLOW · v1.0</span></div><button id="update-app" class="text-button" hidden>更新版本（重設輸入）</button></footer>
+    <noscript><div class="notice urgent">請啟用 JavaScript 才能計算；上述初始數字不可作為計算結果。</div></noscript>
+  </main>
+
+  <template id="shift-template">
+    <article class="card shift-card">
+      <div class="shift-heading"><h3 class="shift-name"></h3><span class="shift-badge">自動</span></div>
+      <p class="shift-interval"></p>
+      <div class="shift-rate-row"><label class="rate-label">剩餘流速</label><div class="rate-field"><input class="rate-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" enterkeyhint="done"><span>mL/hr</span></div></div>
+      <input class="rate-slider" type="range" min="0" max="500" step="1" value="84">
+      <div class="rate-actions" hidden><button class="apply-rate">套用流速</button><button class="cancel-rate text-button">取消</button></div>
+      <p class="rate-error" role="alert" hidden></p>
+      <div class="shift-footer"><span class="shift-allocation"></span><button class="auto-rate text-button" hidden>恢復自動</button></div>
+    </article>
+  </template>
+
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <div class="dialog-heading"><h2 id="help-title">使用與計算說明</h2><button class="icon-button" id="help-close" aria-label="關閉說明">×</button></div>
+    <div class="dialog-content">
+      <h3>加入 iPhone 主畫面</h3>
+      <ol><li>用 <strong>Safari</strong> 開啟這個網站。</li><li>點「分享」，選「加入主畫面」。如有「以網頁 App 開啟」選項，將其開啟。</li><li>名稱可保留「NS 流速」，點「加入」。</li><li>從主畫面開啟一次並等待下方顯示「已可離線使用」，再測試關閉網路。</li></ol>
+      <p>首次開啟需連線，離線快取需 HTTPS 或 localhost。瀏覽器清除網站資料後，需重新連線下載。</p>
+      <h3>每袋 500 mL 的計算</h3>
+      <dl><dt>修正前總袋數</dt><dd>目前流速 × 24 ÷ 500</dd><dt>目前已輸入劑量</dt><dd>目前流速 × 從 08:00 起經過的小時</dd><dt>剩餘需輸入劑量</dt><dd>修正後袋數 × 500 − 已輸入劑量</dd><dt>自動班別流速</dt><dd>（剩餘量 − 手動班別流速 × 剩餘小時）÷ 所有自動班別的剩餘小時</dd></dl>
+      <p>各班流速先四捨五入至整數，再乘各班剩餘時間；因此總量可能有差額。已結束的班別計 0 小時，尚未開始的班別計完整 8 小時。</p>
+      <h3>手動固定與自動分配</h3>
+      <p>輸入小數後按「套用流速」才生效。修改某班會固定該班；其他自動班別重新計算。所有班別都固定時，保留設定並顯示差額。可點「恢復自動」解除固定。</p>
+      <p>修改主要輸入會清除手動設定與未套用的輸入。重新開啟網頁會恢復預設值，請重新核對輸入。</p>
+      <h3>計算範圍</h3>
+      <p>本工具試算輸注量與時間，不判斷醫囑適當性。流速滑桿會隨所需流速延伸，500 mL/hr 並非輸出流速的安全上限。無可分配量時顯示 0，不代表停液醫囑。</p>
+      <p class="caption">以單位一致、未固定班別共同分配為目前公式假設；正式使用前需確認符合院內流程。</p>
+    </div>
+  </dialog>
+  <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>

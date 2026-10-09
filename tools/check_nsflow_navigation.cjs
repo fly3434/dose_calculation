@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const origin = 'https://ns-flow-calculator.bloomyiris6.chatgpt.site/';
+const origin = 'https://fly3434.github.io/dose_calculation/';
 async function request(url) {
   const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
   assert.equal(response.status, 200, url);

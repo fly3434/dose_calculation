@@ -24,7 +24,7 @@ dose_calculation/
 
 ## 網頁版使用
 
-已透過 Sites 公開發布：[開啟 NS 流速計算](https://ns-flow-calculator.bloomyiris6.chatgpt.site)。任何持有網址的人都可使用，不需登入。已用無 Cookie、無登入憑證的請求確認網站返回 HTTP 200 計算頁，沒有登入轉址。
+已透過 GitHub Pages 公開發布：[開啟 NS 流速計算](https://fly3434.github.io/dose_calculation/)。原始碼：[fly3434/dose_calculation](https://github.com/fly3434/dose_calculation)。任何持有網址的人都可使用，不需登入。已用無 Cookie、無登入憑證的請求確認網站返回 HTTP 200 計算頁。
 
 1. 在 iPhone Safari 開啟網站網址。
 2. 點 Safari「分享」→「加入主畫面」；如有「以網頁 App 開啟」選項，將其開啟。
@@ -44,7 +44,7 @@ npm start
 
 網頁版已通過 31 項 JavaScript / 操作事件 / PWA 邏輯測試，其中計算測試涵蓋 3,600 組輸入邊界。網站部署已確認成功；此環境沒有可用瀏覽器，尚未驗證 iPhone Safari 排版、主畫面安裝與實機離線功能。
 
-已發布 v2 離線修復版：主機會將 `index.html` 轉址到首頁，舊版快取該轉址回應可能造成瀏覽器 `ERR_FAILED`。新版快取直接回傳的首頁，修復導航時的轉址標記相容性；已用線上實際檔案驗證 9 個資源快取與模擬離線首頁回應。若曾開啟舊版，請關閉網站分頁再重新開啟；仍出錯可先使用無痕視窗排除舊快取。這是已確認的程式缺陷，但未取得使用者瀏覽器日誌，尚不能認定它是截圖錯誤的唯一原因。
+已發布 v2 離線修復版：先前 Sites 主機會將 `index.html` 轉址到首頁，舊版快取該轉址回應可能造成瀏覽器 `ERR_FAILED`。新版快取直接回傳的首頁，修復導航時的轉址標記相容性。若曾開啟舊版，請關閉網站分頁再重新開啟；仍出錯可先使用無痕視窗排除舊快取。
 
 ## 公式假設（待需求確認）
 
@@ -103,11 +103,13 @@ npm test
 
 `tests/` 提供 31 項測試，包含 18 項計算測試（涵蓋 3,600 組輸入邊界）、7 項圖示與離線程式測試，以及 6 項操作事件測試。它們涵蓋袋數單位、各班相互連動、流速四捨五入、全手動差額、午夜、隔日 08:00、超出目標、無效輸入及離線快取。
 
-在根目錄可執行 `node tools/check_nsflow_navigation.cjs`，核對既有 Sites 網站的離線程式是否與本地一致，並使用網站實際回應驗證模擬離線導航。此檢查需要網路連線，不能取代真實瀏覽器測試。改用其他網址時，請更新該工具的 `origin`。
+在根目錄可執行 `node tools/check_nsflow_navigation.cjs`，核對 GitHub Pages 網站的離線程式是否與本地一致，並使用網站實際回應驗證模擬離線導航。此檢查需要網路連線，不能取代真實瀏覽器測試。改用其他網址時，請更新該工具的 `origin`。
 
 正式使用前，需先確認此分配規則符合使用者需求與院內實際流程，並完成 iPhone Safari、主畫面安裝與實機離線驗證。
 
 ## GitHub Pages 部署
+
+已建立公開儲存庫 `fly3434/dose_calculation`，GitHub Pages 已設定為 `main` 分支的 `/(root)`。後續提交並 push 至 `origin/main`，GitHub 會自動更新網站。
 
 1. 將根目錄的專案檔案提交至 GitHub 儲存庫（不要上傳 `.git/`）。使用 GitHub 免費方案時，儲存庫需為公開。
 2. 在儲存庫開啟 **Settings → Pages**。
@@ -118,7 +120,7 @@ npm test
 
 ## Sites 部署與版本更新
 
-原有 `.openai/hosting.json` 的 `project_id` 已保留。因 Sites 封裝工具需使用獨立輸出資料夾，部署前執行：
+目前主要發布位置為 GitHub Pages。原有 Sites 網址 `https://ns-flow-calculator.bloomyiris6.chatgpt.site` 與 `.openai/hosting.json` 的 `project_id` 已保留，可作為另一個部署來源。因 Sites 封裝工具需使用獨立輸出資料夾，部署前執行：
 
 ```powershell
 npm run build:site

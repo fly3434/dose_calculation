@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const NSFlow = require('../dist/calculator.js');
+const NSFlow = require('../calculator.js');
 class Element {
   constructor() {
     this.value=''; this.hidden=false; this.disabled=false; this.textContent='';
@@ -31,7 +31,7 @@ function newCard() {
   return card;
 }
 function launch() {
-  const html=fs.readFileSync(path.join(__dirname,'../dist/index.html'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   const ids=new Map();
   for (const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
     const element=new Element();
@@ -44,7 +44,7 @@ function launch() {
   }
   ids.get('shift-template').content={firstElementChild:{cloneNode:newCard}};
   const classes={'.total-card':new Element(),'.total-icon':new Element()};
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../dist/app.js'),'utf8'),{
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),{
     document:{getElementById:id=>ids.get(id),querySelector:selector=>classes[selector]},
     NSFlow,Intl,Number,Math,Object,String,Promise,Error,
     navigator:{},window:{matchMedia:()=>({matches:false}),isSecureContext:false},

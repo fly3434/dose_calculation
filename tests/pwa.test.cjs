@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const dist = path.resolve(__dirname, '../dist');
+const dist = path.resolve(__dirname, '..');
 
 test('manifest and Safari icons reference existing assets at declared dimensions', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(dist, 'manifest.webmanifest'), 'utf8'));

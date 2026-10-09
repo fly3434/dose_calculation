@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { calculate, timeLabel, parseRate } = require('../dist/calculator.js');
+const { calculate, timeLabel, parseRate } = require('../calculator.js');
 const base = { currentRate: 80, targetBags: 4, elapsedHours: 4 };
 const rates = result => result.plans.map(plan => plan.rate);
 

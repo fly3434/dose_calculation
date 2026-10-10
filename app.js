@@ -170,7 +170,7 @@
       card.querySelector('.handover-title').textContent = `交給${handover.nextTitle}`;
       card.querySelector('.handover-time').textContent = `${handover.time} 交班`;
       card.querySelector('.handover-bags').textContent = decimal.format(handover.bags);
-      card.querySelector('.handover-volume').textContent = `（${integer.format(handover.bagVolume)} mL）`;
+      card.querySelector('.handover-volume').textContent = integer.format(handover.bagVolume);
       card.querySelector('.handover-note').textContent = [
         handover.isPast ? '已交班，依變更前流速回推。' : '依目前流速規劃試算。',
         handover.needsNewBag ? '這袋剛好輸完，需換新袋。' : '每天 08:00 從 500 mL 滿袋起算。'
@@ -182,6 +182,7 @@
     } else if (result.allActiveShiftsManual && result.difference !== 0) {
       setNotice('allocation-notice', '剩餘班別均為手動固定，無法自動平衡。請調整流速或恢復某班為自動。');
     } else setNotice('allocation-notice', '');
+    $('required-volume').textContent = integer.format(result.remainingVolume);
     $('planned-volume').textContent = integer.format(result.plannedVolume);
     $('difference-label').textContent = result.difference > 0 ? '與目標劑量多了' : result.difference < 0 ? '與目標劑量少了' : '與目標劑量一樣';
     $('difference').textContent = integer.format(Math.abs(result.difference)) + ' mL';

@@ -1,6 +1,6 @@
 'use strict';
 // Bump the version whenever any cached application asset changes.
-const CACHE = 'nsflow-app-v3';
+const CACHE = 'nsflow-app-v4';
 // The host redirects index.html to ./; cache only the canonical, direct page.
 const ASSETS = ['./', './styles.css', './calculator.js', './app.js', './manifest.webmanifest', './icon.svg', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 const urls = ASSETS.map(path => new URL(path, self.registration.scope).href);

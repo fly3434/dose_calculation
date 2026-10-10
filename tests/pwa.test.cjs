@@ -60,7 +60,7 @@ function workerHarness({ legacy = false, cacheFailure = false, online = false } 
 test('service worker caches every local resource including icons and reports readiness', async () => {
   const h = workerHarness();
   await h.dispatch('install');
-  const entries = h.stores.get('nsflow-app-v3');
+  const entries = h.stores.get('nsflow-app-v4');
   assert.equal(entries.size, 9);
   assert.ok(!entries.has('https://example.test/planner/index.html'));
   for (const url of entries.keys()) {
@@ -97,7 +97,7 @@ test('navigation strips redirected response metadata while preserving HTML and h
   await h.dispatch('install');
   const redirected = new Response('<html>Cached planner</html>', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   Object.defineProperty(redirected, 'redirected', { value: true });
-  h.stores.get('nsflow-app-v3').set('https://example.test/planner/', redirected);
+  h.stores.get('nsflow-app-v4').set('https://example.test/planner/', redirected);
   const response = await h.dispatch('fetch', { request: { url: 'https://example.test/planner/', mode: 'navigate', redirect: 'manual', method: 'GET' } });
   assert.equal(response.redirected, false, 'Manual navigation must not receive a followed-redirect response');
   assert.equal(response.status, 200);
@@ -111,7 +111,7 @@ test('a broken v1 worker can be replaced without opening its inaccessible update
   assert.equal(h.self.didSkip, true);
   await h.dispatch('activate');
   assert.ok(!h.stores.has('nsflow-app-v1'));
-  assert.ok(h.stores.has('nsflow-app-v3'));
+  assert.ok(h.stores.has('nsflow-app-v4'));
 });
 
 test('cache/storage failure falls back to network instead of failing navigation', async () => {

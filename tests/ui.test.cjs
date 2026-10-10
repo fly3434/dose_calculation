@@ -122,7 +122,7 @@ test('handover cards sit between shifts and update with manual flow changes',()=
   assert.equal(children.length,5);
   assert.deepEqual([children[0].dataset.shift,children[2].dataset.shift,children[4].dataset.shift],['day','evening','night']);
   assert.equal(children[1].querySelector('.handover-bags').textContent,'0.688');
-  assert.equal(children[1].querySelector('.handover-volume').textContent,'（344 mL）');
+  assert.equal(children[1].querySelector('.handover-volume').textContent,'344');
   assert.equal(children[3].querySelector('.handover-bags').textContent,'0.344');
   const day=ui.card('day');day.querySelector('.rate-slider').value='100';day.querySelector('.rate-slider').emit('input');
   assert.equal(children[1].querySelector('.handover-bags').textContent,'0.56');
@@ -152,4 +152,21 @@ test('all three shift labels use requested minute-inclusive display intervals',(
   assert.equal(ui.card('day').querySelector('.shift-interval').textContent,'08:00-15:59');
   assert.equal(ui.card('evening').querySelector('.shift-interval').textContent,'16:00-23:59');
   assert.equal(ui.card('night').querySelector('.shift-interval').textContent,'24:00-隔日07:59');
+});
+test('remaining target and expected input are distinct, and only applied edits affect totals',()=>{
+  const ui=launch();
+  assert.equal(ui.get('required-volume').textContent,'1,680');
+  assert.equal(ui.get('planned-volume').textContent,'1,680');
+  for(const id of ['day','evening','night']){
+    const card=ui.card(id),input=card.querySelector('.rate-input');
+    input.value='80';input.emit('input');
+    card.querySelector('.apply-rate').emit('click');
+  }
+  assert.equal(ui.get('required-volume').textContent,'1,680');
+  assert.equal(ui.get('planned-volume').textContent,'1,600');
+  assert.equal(ui.get('difference-label').textContent,'與目標劑量少了');
+  assert.equal(ui.get('difference').textContent,'80 mL');
+  ui.card('day').querySelector('.rate-input').value='100';
+  ui.card('day').querySelector('.rate-input').emit('input');
+  assert.equal(ui.get('planned-volume').textContent,'1,600');
 });

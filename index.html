@@ -81,8 +81,9 @@
         </section>
 
         <section class="total-card" aria-labelledby="total-title">
-          <div class="total-top"><div><h2 id="total-title">總剩餘劑量</h2><div class="total-value"><strong id="planned-volume">1,680</strong><span>mL</span></div></div><span class="total-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span></div>
-          <p class="total-formula">各班整數流速 × 該班剩餘小時，再加總</p>
+          <div class="total-top"><div><h2 id="total-title">總剩餘劑量</h2><div class="total-value"><strong id="required-volume">1,680</strong><span>mL</span></div></div><span class="total-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span></div>
+          <p class="expected-volume-row"><span>預計輸入劑量</span><strong id="planned-volume">1,680</strong><span>mL</span></p>
+          <p class="total-formula">預計量＝各班目前設定流速 × 剩餘小時，再加總</p>
           <div class="difference-row"><span id="difference-label">與目標劑量一樣</span><strong id="difference">0 mL</strong></div>
           <p id="difference-description" class="total-detail">分配量與剩餘目標一致。</p>
           <p id="daily-projection" class="total-detail">預計每日總輸入量 2,000 / 2,000 mL</p>
@@ -90,7 +91,7 @@
       </div>
     </div>
 
-    <footer><p>依已確認的醫囑試算；設定輸液設備前，請核對總量、流速與時間。</p><div class="footer-meta"><span id="offline-status" role="status">離線快取準備中</span><span>NS FLOW · v1.1</span></div><button id="update-app" class="text-button" hidden>更新版本（重設輸入）</button></footer>
+    <footer><p>依已確認的醫囑試算；設定輸液設備前，請核對總量、流速與時間。</p><div class="footer-meta"><span id="offline-status" role="status">離線快取準備中</span><span>NS FLOW · v1.2</span></div><button id="update-app" class="text-button" hidden>更新版本（重設輸入）</button></footer>
     <noscript><div class="notice urgent">請啟用 JavaScript 才能計算；上述初始數字不可作為計算結果。</div></noscript>
   </main>
 
@@ -109,7 +110,7 @@
   <template id="handover-template">
     <aside class="handover-card">
       <div class="handover-heading"><strong class="handover-title"></strong><span class="handover-time"></span></div>
-      <div class="handover-value"><span>目前這袋剩</span><strong class="handover-bags"></strong><span>袋 NS</span><span class="handover-volume"></span></div>
+      <div class="handover-value"><span>目前這袋剩</span><strong class="handover-volume"></strong><span>mL NS</span><span class="handover-bag-detail">（<strong class="handover-bags"></strong>袋）</span></div>
       <p class="handover-note"></p>
     </aside>
   </template>
@@ -123,6 +124,7 @@
       <h3>每袋 500 mL 的計算</h3>
       <dl><dt>修正前總袋數</dt><dd>目前流速 × 24 ÷ 500</dd><dt>目前已輸入劑量</dt><dd>目前流速 × 從 08:00 起經過的小時</dd><dt>剩餘需輸入劑量</dt><dd>修正後袋數 × 500 − 已輸入劑量</dd><dt>自動班別流速</dt><dd>（剩餘量 − 手動班別流速 × 剩餘小時）÷ 所有自動班別的剩餘小時</dd></dl>
       <p>各班流速先四捨五入至整數，再乘各班剩餘時間；因此總量可能有差額。已結束的班別計 0 小時，尚未開始的班別計完整 8 小時。</p>
+      <p>「總剩餘劑量」表示目標尚需輸入的量。「預計輸入劑量」為三班目前設定流速乘以剩餘小時的加總，含手動固定與自動連動的班別；未套用的輸入不計入。</p>
       <h3>交班時這袋 NS 剩多少</h3>
       <p>每天 08:00 從一袋 500 mL 滿袋開始，假設每袋輸完後接續換新袋。交班袋數表示目前這袋的剩餘量，並非每日目標尚未輸入的總袋數。</p>
       <p>先累計到 16:00 或 24:00 的輸入量，再以每袋 500 mL 計算這袋剩餘量。例如累計 656 mL 時，第二袋已輸入 156 mL，剩 344 mL（0.688 袋）。若交班時剛好輸完，顯示 0 mL 並提醒換新袋。已經過的交班點只能依變更前流速回推，不是實際紀錄。</p>

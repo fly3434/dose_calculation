@@ -21,6 +21,7 @@ class Element {
   querySelector(selector) { return this.nodes[selector]; }
   append(node) { (this.children ||= []).push(node); }
   focus() {} blur() {} showModal() { this.open=true; } close() { this.open=false; this.emit('close'); }
+  setSelectionRange(start,end) { this.selectionStart=start;this.selectionEnd=end; }
   getBoundingClientRect() { return { left:0,right:400,top:0,bottom:800 }; }
 }
 function newCard() {
@@ -35,14 +36,19 @@ function launch() {
   const ids=new Map();
   for (const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
     const element=new Element();
-    for (const attr of ['min','max','value']) {
+    for (const attr of ['min','max','value','step']) {
       const value=match[0].match(new RegExp('\\b'+attr+'="([^"]+)"'));
-      if(value) element[attr]=value[1];
+      if(value) { element[attr]=value[1];element.attrs[attr]=value[1]; }
     }
     element.hidden=/\bhidden\b/.test(match[0]);
     ids.set(match[1],element);
   }
   ids.get('shift-template').content={firstElementChild:{cloneNode:newCard}};
+  ids.get('handover-template').content={firstElementChild:{cloneNode:()=>{
+    const card=new Element();
+    for(const name of ['handover-title','handover-time','handover-bags','handover-volume','handover-note'])card.nodes['.'+name]=new Element();
+    return card;
+  }}};
   const classes={'.total-card':new Element(),'.total-icon':new Element()};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),{
     document:{getElementById:id=>ids.get(id),querySelector:selector=>classes[selector]},
@@ -71,7 +77,8 @@ test('invalid text does not change plans; manual decimal rounds on apply',()=>{
   assert.equal(ui.get('planned-volume').textContent,'1,680');
   input.value='100.5';input.emit('input');day.querySelector('.apply-rate').emit('click');
   assert.equal(input.value,'101');
-  assert.equal(ui.get('difference').textContent,'+4 mL');
+  assert.equal(ui.get('difference').textContent,'4 mL');
+  assert.equal(ui.get('difference-label').textContent,'與目標劑量多了');
 });
 test('major time change clears manual settings and disables ended shifts',()=>{
   const ui=launch(),day=ui.card('day');
@@ -87,7 +94,8 @@ test('endpoint and exceeded target show notices with disabled rates',()=>{
   const ui=launch();
   ui.get('change-time').value='24';ui.get('change-time').emit('input');
   assert.match(ui.get('calculation-notice').textContent,/剩餘時間為 0/);
-  assert.equal(ui.get('difference').textContent,'-80 mL');
+  assert.equal(ui.get('difference').textContent,'80 mL');
+  assert.equal(ui.get('difference-label').textContent,'與目標劑量少了');
   ui.get('change-time').value='1';ui.get('change-time').emit('input');
   ui.get('current-rate').value='500';ui.get('current-rate').emit('input');
   ui.get('target-bags').value='0.5';ui.get('target-bags').emit('input');
@@ -108,4 +116,40 @@ test('help dialog opens and closes using actual handlers',()=>{
   const ui=launch();ui.get('help-open').emit('click');
   assert.equal(ui.get('help-dialog').open,true);
   ui.get('help-close').emit('click');assert.equal(ui.get('help-dialog').open,false);
+});
+test('handover cards sit between shifts and update with manual flow changes',()=>{
+  const ui=launch(),children=ui.get('shift-cards').children;
+  assert.equal(children.length,5);
+  assert.deepEqual([children[0].dataset.shift,children[2].dataset.shift,children[4].dataset.shift],['day','evening','night']);
+  assert.equal(children[1].querySelector('.handover-bags').textContent,'0.688');
+  assert.equal(children[1].querySelector('.handover-volume').textContent,'（344 mL）');
+  assert.equal(children[3].querySelector('.handover-bags').textContent,'0.344');
+  const day=ui.card('day');day.querySelector('.rate-slider').value='100';day.querySelector('.rate-slider').emit('input');
+  assert.equal(children[1].querySelector('.handover-bags').textContent,'0.56');
+  assert.equal(children[3].querySelector('.handover-bags').textContent,'0.28');
+});
+test('five-unit sliders retain exact automatic integer rate without coercing 84 to 85',()=>{
+  const ui=launch(),slider=ui.card('day').querySelector('.rate-slider');
+  assert.equal(ui.get('current-rate').min,'5');
+  assert.equal(ui.get('current-rate').step,'5');
+  assert.equal(slider.step,'5');
+  assert.equal((Number(slider.value)-Number(slider.min))%5,0);
+  assert.equal(slider.value,'84');
+  slider.value='89';slider.emit('input');
+  assert.equal(ui.card('day').querySelector('.rate-input').value,'89');
+  assert.equal(ui.card('evening').querySelector('.rate-input').value,'83');
+});
+test('focus and clicking a rate entry place the caret to the right of all digits',()=>{
+  const ui=launch(),input=ui.card('night').querySelector('.rate-input');
+  input.emit('focus');
+  assert.equal(input.selectionStart,input.value.length);
+  assert.equal(input.selectionEnd,input.value.length);
+  input.value='100.5';input.emit('click');
+  assert.equal(input.selectionStart,5);
+});
+test('all three shift labels use requested minute-inclusive display intervals',()=>{
+  const ui=launch();
+  assert.equal(ui.card('day').querySelector('.shift-interval').textContent,'08:00-15:59');
+  assert.equal(ui.card('evening').querySelector('.shift-interval').textContent,'16:00-23:59');
+  assert.equal(ui.card('night').querySelector('.shift-interval').textContent,'24:00-隔日07:59');
 });

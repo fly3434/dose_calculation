@@ -120,3 +120,33 @@ test('3600 input combinations preserve hours, nonnegative rates and rounding bou
     }
   }
 });
+test('handover bags reflect the partial hanging bag from a full 08:00 start',()=>{
+  const r=calculate(base);
+  assert.deepEqual(r.handovers.map(h=>h.cumulativeVolume),[656,1328]);
+  assert.deepEqual(r.handovers.map(h=>h.bagVolume),[344,172]);
+  assert.deepEqual(r.handovers.map(h=>h.bags),[0.688,0.344]);
+});
+test('changing day or evening flow recalculates the following handover bag',()=>{
+  const r=calculate({...base,overrides:{day:100,evening:90}});
+  assert.deepEqual(r.handovers.map(h=>h.cumulativeVolume),[720,1440]);
+  assert.deepEqual(r.handovers.map(h=>h.bagVolume),[280,60]);
+});
+test('an exact bag boundary displays an empty bag and need for replacement',()=>{
+  const r=calculate({currentRate:75,targetBags:4,elapsedHours:4,overrides:{day:50}});
+  assert.equal(r.handovers[0].cumulativeVolume,500);
+  assert.equal(r.handovers[0].bagVolume,0);
+  assert.equal(r.handovers[0].needsNewBag,true);
+});
+test('zero delivery leaves the initial full bag instead of reporting an empty one',()=>{
+  const r=calculate({currentRate:80,targetBags:4,elapsedHours:0,overrides:{day:0}});
+  assert.equal(r.handovers[0].cumulativeVolume,0);
+  assert.equal(r.handovers[0].bagVolume,500);
+  assert.equal(r.handovers[0].needsNewBag,false);
+});
+test('past handovers are marked as historical estimates and ignore future overrides',()=>{
+  const r=calculate({...base,elapsedHours:12,overrides:{night:100}});
+  assert.equal(r.handovers[0].isPast,true);
+  assert.equal(r.handovers[0].cumulativeVolume,640);
+  assert.equal(r.handovers[0].bagVolume,360);
+  assert.equal(r.handovers[1].isPast,false);
+});

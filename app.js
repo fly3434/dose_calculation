@@ -5,6 +5,7 @@
   const integer = new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 });
   const decimal = new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 3 });
   const cards = new Map();
+  const handoverCards = new Map();
   let result;
   let announcementTimer;
   let returnFocus;
@@ -73,6 +74,11 @@
       error.hidden = true;
       input.removeAttribute('aria-invalid');
     });
+    function caretToEnd() {
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+    input.addEventListener('focus', () => setTimeout(caretToEnd, 0));
+    input.addEventListener('click', caretToEnd);
     input.addEventListener('keydown', event => {
       if (event.key === 'Enter') { event.preventDefault(); applyRate(card); input.blur(); }
       if (event.key === 'Escape') { clearDraft(card); input.blur(); }
@@ -91,6 +97,11 @@
     });
     cards.set(shift.id, card);
     $('shift-cards').append(card);
+    if (shift.id !== 'night') {
+      const handover = $('handover-template').content.firstElementChild.cloneNode(true);
+      handoverCards.set(shift.id, handover);
+      $('shift-cards').append(handover);
+    }
   }
 
   function render(clearDrafts = false) {
@@ -141,12 +152,29 @@
       }
       input.disabled = !plan.enabled;
       slider.disabled = !plan.enabled;
-      slider.max = String(Math.max(500, plan.rate, Math.ceil(Math.max(0, result.remainingVolume) / Math.max(1, plan.hours))));
+      // Align the range's grid with the actual integer rate (e.g. 84 -> 89),
+      // so native range controls do not silently sanitize 84 into 85.
+      const offset = plan.rate % 5;
+      const upper = Math.max(500, plan.rate, Math.ceil(Math.max(0, result.remainingVolume) / Math.max(1, plan.hours)));
+      slider.min = String(offset);
+      slider.step = '5';
+      slider.max = String(offset + Math.ceil((upper - offset) / 5) * 5);
       slider.value = String(plan.rate);
       slider.setAttribute('aria-valuetext', `${plan.rate} mL/hr`);
       paintRange(slider);
       card.querySelector('.shift-allocation').textContent = `剩餘 ${plan.hours} 小時 · 分配 ${integer.format(plan.volume)} mL`;
       card.querySelector('.auto-rate').hidden = !plan.isManual;
+    }
+    for (const handover of result.handovers) {
+      const card = handoverCards.get(handover.id);
+      card.querySelector('.handover-title').textContent = `交給${handover.nextTitle}`;
+      card.querySelector('.handover-time').textContent = `${handover.time} 交班`;
+      card.querySelector('.handover-bags').textContent = decimal.format(handover.bags);
+      card.querySelector('.handover-volume').textContent = `（${integer.format(handover.bagVolume)} mL）`;
+      card.querySelector('.handover-note').textContent = [
+        handover.isPast ? '已交班，依變更前流速回推。' : '依目前流速規劃試算。',
+        handover.needsNewBag ? '這袋剛好輸完，需換新袋。' : '每天 08:00 從 500 mL 滿袋起算。'
+      ].join(' ');
     }
     $('reset-rates').hidden = Object.keys(state.overrides).length === 0;
     if (result.overAllocatedManualVolume > 0) {
@@ -155,10 +183,13 @@
       setNotice('allocation-notice', '剩餘班別均為手動固定，無法自動平衡。請調整流速或恢復某班為自動。');
     } else setNotice('allocation-notice', '');
     $('planned-volume').textContent = integer.format(result.plannedVolume);
-    $('difference').textContent = (result.difference > 0 ? '+' : '') + integer.format(result.difference) + ' mL';
+    $('difference-label').textContent = result.difference > 0 ? '與目標劑量多了' : result.difference < 0 ? '與目標劑量少了' : '與目標劑量一樣';
+    $('difference').textContent = integer.format(Math.abs(result.difference)) + ' mL';
     $('difference-description').textContent = result.difference === 0
       ? '分配量與剩餘目標一致。'
-      : '正值表示超出，負值表示不足；整數流速可能造成差額。';
+      : result.difference > 0
+        ? `預計比每日目標多輸入 ${integer.format(result.difference)} mL。`
+        : `預計比每日目標少輸入 ${integer.format(-result.difference)} mL。`;
     $('daily-projection').textContent = `預計每日總輸入量 ${integer.format(result.projectedDailyVolume)} / ${integer.format(result.targetVolume)} mL`;
     document.querySelector('.total-card').classList.toggle('has-difference', result.difference !== 0);
     document.querySelector('.total-icon').innerHTML = result.difference === 0

@@ -5,9 +5,9 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const shifts = [
-    { id: 'day', title: '日班', interval: '08:00–16:00', start: 0, end: 8 },
-    { id: 'evening', title: '小夜班', interval: '16:00–24:00', start: 8, end: 16 },
-    { id: 'night', title: '大夜班', interval: '00:00–隔日 08:00', start: 16, end: 24 }
+    { id: 'day', title: '日班', interval: '08:00-15:59', start: 0, end: 8 },
+    { id: 'evening', title: '小夜班', interval: '16:00-23:59', start: 8, end: 16 },
+    { id: 'night', title: '大夜班', interval: '24:00-隔日07:59', start: 16, end: 24 }
   ];
   const maximumNumericRate = Math.floor(Number.MAX_SAFE_INTEGER / 24);
 
@@ -36,9 +36,22 @@
       plan.volume = plan.rate * plan.hours;
     }
     const plannedVolume = plans.reduce((total, plan) => total + plan.volume, 0);
+    // Bags start full at 08:00 and are replaced after each 500 mL is infused.
+    // Do not allocate the full daily target to the currently hanging bag.
+    const handovers = [8, 16].map((boundary, index) => {
+      const cumulativeVolume = currentRate * Math.min(elapsedHours, boundary)
+        + plans.reduce((total, plan) => total + plan.rate * Math.max(0, Math.min(plan.end, boundary) - Math.max(plan.start, elapsedHours)), 0);
+      const usedInBag = cumulativeVolume % 500;
+      const needsNewBag = cumulativeVolume > 0 && usedInBag === 0;
+      const bagVolume = needsNewBag ? 0 : 500 - usedInBag;
+      return { id: shifts[index].id, nextTitle: shifts[index + 1].title,
+        time: boundary === 8 ? '16:00' : '24:00', cumulativeVolume,
+        bagVolume, bags: bagVolume / 500, needsNewBag,
+        isPast: elapsedHours > boundary };
+    });
     return {
       previousBags: currentRate * 24 / 500, targetVolume, infusedVolume, remainingVolume,
-      remainingHours: 24 - elapsedHours, plans, plannedVolume,
+      remainingHours: 24 - elapsedHours, plans, handovers, plannedVolume,
       difference: plannedVolume - remainingVolume,
       projectedDailyVolume: infusedVolume + plannedVolume,
       overAllocatedManualVolume: remainingVolume > 0 ? Math.max(0, manualVolume - remainingVolume) : 0,

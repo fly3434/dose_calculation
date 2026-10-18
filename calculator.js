@@ -36,11 +36,32 @@
       plan.volume = plan.rate * plan.hours;
     }
     const plannedVolume = plans.reduce((total, plan) => total + plan.volume, 0);
+    const cumulativeVolumeAt = boundary => currentRate * Math.min(elapsedHours, boundary)
+      + plans.reduce((total, plan) => total + plan.rate * Math.max(0, Math.min(plan.end, boundary) - Math.max(plan.start, elapsedHours)), 0);
+    for (const plan of plans) {
+      plan.replacementTimes = [];
+      plan.replacementCount = 0;
+      plan.omittedReplacementCount = 0;
+      if (!plan.enabled || plan.rate === 0) continue;
+      const start = Math.max(elapsedHours, plan.start);
+      const startVolume = cumulativeVolumeAt(start);
+      const endVolume = startVolume + plan.volume;
+      // Include an empty bag at this interval's start, but allocate an exact
+      // end-boundary change to the next shift. Never replace the initial full bag.
+      const firstBag = Math.max(1, Math.ceil(startVolume / 500));
+      const lastBag = Math.ceil(endVolume / 500) - 1;
+      plan.replacementCount = Math.max(0, lastBag - firstBag + 1);
+      // Large manual values must not cause an unbounded loop or freeze the UI.
+      const shownCount = Math.min(32, plan.replacementCount);
+      for (let i = 0; i < shownCount; i++) {
+        plan.replacementTimes.push(start + ((firstBag + i) * 500 - startVolume) / plan.rate);
+      }
+      plan.omittedReplacementCount = plan.replacementCount - shownCount;
+    }
     // Bags start full at 08:00 and are replaced after each 500 mL is infused.
     // Do not allocate the full daily target to the currently hanging bag.
     const handovers = [8, 16].map((boundary, index) => {
-      const cumulativeVolume = currentRate * Math.min(elapsedHours, boundary)
-        + plans.reduce((total, plan) => total + plan.rate * Math.max(0, Math.min(plan.end, boundary) - Math.max(plan.start, elapsedHours)), 0);
+      const cumulativeVolume = cumulativeVolumeAt(boundary);
       const usedInBag = cumulativeVolume % 500;
       const needsNewBag = cumulativeVolume > 0 && usedInBag === 0;
       const bagVolume = needsNewBag ? 0 : 500 - usedInBag;
@@ -71,5 +92,13 @@
     const value = Number(normalized);
     return Number.isFinite(value) && value >= 0 && value <= maximumNumericRate ? value : null;
   }
-  return { calculate, timeLabel, parseRate, shifts };
+  function replacementTimeLabel(elapsedHours) {
+    if (!Number.isFinite(elapsedHours) || elapsedHours < 0 || elapsedHours > 24) throw new RangeError('換袋時間無效');
+    // Round down to a minute; epsilon only corrects floating-point boundary noise.
+    const minutes = Math.floor((8 + elapsedHours) * 60 + 1e-8);
+    if (minutes === 24 * 60) return '24:00';
+    const hour = Math.floor(minutes / 60) % 24;
+    return (minutes >= 24 * 60 ? '隔日 ' : '') + String(hour).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
+  }
+  return { calculate, timeLabel, replacementTimeLabel, parseRate, shifts };
 });

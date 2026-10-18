@@ -164,6 +164,26 @@
       paintRange(slider);
       card.querySelector('.shift-allocation').textContent = `剩餘 ${plan.hours} 小時 · 分配 ${integer.format(plan.volume)} mL`;
       card.querySelector('.auto-rate').hidden = !plan.isManual;
+      const schedule = card.querySelector('.replacement-times');
+      const scheduleNote = card.querySelector('.replacement-note');
+      if (plan.hours === 0) {
+        schedule.textContent = '本班已結束';
+        scheduleNote.textContent = '不列回推的換袋紀錄。';
+      } else if (!plan.enabled) {
+        schedule.textContent = '無剩餘需輸入量，未排定換袋';
+        scheduleNote.textContent = '請核對目前醫囑與實際餘量。';
+      } else if (plan.rate === 0) {
+        schedule.textContent = '本班流速為 0，未排定換袋';
+        scheduleNote.textContent = '之後恢復輸入時重新推算。';
+      } else if (plan.replacementTimes.length === 0) {
+        schedule.textContent = '本班剩餘時段預計不需換袋';
+        scheduleNote.textContent = '交接時點的換袋會列於下一班。';
+      } else {
+        schedule.textContent = plan.replacementTimes.map(time => '約 ' + NSFlow.replacementTimeLabel(time)).join('、');
+        scheduleNote.textContent = plan.omittedReplacementCount > 0
+          ? `另有 ${integer.format(plan.omittedReplacementCount)} 個時點未展開，請核對輸入流速。`
+          : '每袋 500 mL，依目前規劃推算；實際請核對現場餘量。';
+      }
     }
     for (const handover of result.handovers) {
       const card = handoverCards.get(handover.id);

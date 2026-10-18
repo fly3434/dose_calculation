@@ -91,7 +91,7 @@
       </div>
     </div>
 
-    <footer><p>依已確認的醫囑試算；設定輸液設備前，請核對總量、流速與時間。</p><div class="footer-meta"><span id="offline-status" role="status">離線快取準備中</span><span>NS FLOW · v1.2</span></div><button id="update-app" class="text-button" hidden>更新版本（重設輸入）</button></footer>
+    <footer><p>依已確認的醫囑試算；設定輸液設備前，請核對總量、流速與時間。</p><div class="footer-meta"><span id="offline-status" role="status">離線快取準備中</span><span>NS FLOW · v1.3</span></div><button id="update-app" class="text-button" hidden>更新版本（重設輸入）</button></footer>
     <noscript><div class="notice urgent">請啟用 JavaScript 才能計算；上述初始數字不可作為計算結果。</div></noscript>
   </main>
 
@@ -104,6 +104,7 @@
       <div class="rate-actions" hidden><button class="apply-rate">套用流速</button><button class="cancel-rate text-button">取消</button></div>
       <p class="rate-error" role="alert" hidden></p>
       <div class="shift-footer"><span class="shift-allocation"></span><button class="auto-rate text-button" hidden>恢復自動</button></div>
+      <div class="replacement-schedule"><h4>預計更換點滴時間</h4><p class="replacement-times"></p><p class="replacement-note"></p></div>
     </article>
   </template>
 
@@ -128,6 +129,9 @@
       <h3>交班時這袋 NS 剩多少</h3>
       <p>每天 08:00 從一袋 500 mL 滿袋開始，假設每袋輸完後接續換新袋。交班袋數表示目前這袋的剩餘量，並非每日目標尚未輸入的總袋數。</p>
       <p>先累計到 16:00 或 24:00 的輸入量，再以每袋 500 mL 計算這袋剩餘量。例如累計 656 mL 時，第二袋已輸入 156 mL，剩 344 mL（0.688 袋）。若交班時剛好輸完，顯示 0 mL 並提醒換新袋。已經過的交班點只能依變更前流速回推，不是實際紀錄。</p>
+      <h3>各班預計換袋時間</h3>
+      <p>從變更時間起，沿用目前這袋的餘量，依各班設定流速推算每累計輸完 500 mL 的時點。流速調整並套用後會重新計算。時點向下取至分鐘並標示「約」，實際換袋仍需核對現場餘量。</p>
+      <p>16:00、24:00 的交接時點列在下一班；隔日 08:00 依每日滿袋起算規則重設，不重複列為大夜班的換袋時點。已結束的班別不列預計時間。若換袋時需持續輸注但當班流速為 0，會在下一個有流速的時段開始列換袋時間。每班最多展開 32 個時點，超過會顯示未展開的次數。</p>
       <h3>手動固定與自動分配</h3>
       <p>輸入小數後按「套用流速」才生效。修改某班會固定該班；其他自動班別重新計算。所有班別都固定時，保留設定並顯示差額。可點「恢復自動」解除固定。</p>
       <p>流速滑桿每格增減 5 mL/hr。各班滑桿以當前整數流速為基準，數字欄位仍可微調；自動流速不強制取 5 的倍數。目前流速滑桿範圍為 5–500 mL/hr。</p>

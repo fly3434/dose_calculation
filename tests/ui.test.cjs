@@ -26,7 +26,7 @@ class Element {
 }
 function newCard() {
   const card=new Element();
-  for (const name of ['shift-name','shift-interval','rate-input','rate-slider','rate-label','rate-error','apply-rate','auto-rate','cancel-rate','rate-actions','shift-badge','shift-allocation']) card.nodes['.'+name]=new Element();
+  for (const name of ['shift-name','shift-interval','rate-input','rate-slider','rate-label','rate-error','apply-rate','auto-rate','cancel-rate','rate-actions','shift-badge','shift-allocation','replacement-times','replacement-note']) card.nodes['.'+name]=new Element();
   card.nodes['.rate-slider'].min='0'; card.nodes['.rate-slider'].max='500';
   card.nodes['.rate-actions'].hidden=true;
   return card;
@@ -169,4 +169,24 @@ test('remaining target and expected input are distinct, and only applied edits a
   ui.card('day').querySelector('.rate-input').value='100';
   ui.card('day').querySelector('.rate-input').emit('input');
   assert.equal(ui.get('planned-volume').textContent,'1,600');
+});
+test('each shift displays its forecast replacement times and recalculates applied edits',()=>{
+  const ui=launch();
+  assert.equal(ui.card('day').querySelector('.replacement-times').textContent,'約 14:08');
+  assert.equal(ui.card('evening').querySelector('.replacement-times').textContent,'約 20:05');
+  assert.equal(ui.card('night').querySelector('.replacement-times').textContent,'約 隔日 02:02');
+  const day=ui.card('day');day.querySelector('.rate-input').value='100';day.querySelector('.rate-input').emit('input');
+  assert.equal(day.querySelector('.replacement-times').textContent,'約 14:08');
+  day.querySelector('.apply-rate').emit('click');
+  assert.equal(day.querySelector('.replacement-times').textContent,'約 13:48');
+  assert.equal(ui.card('evening').querySelector('.replacement-times').textContent,'約 19:30');
+  assert.equal(ui.card('night').querySelector('.replacement-times').textContent,'約 隔日 01:45');
+});
+test('ended and zero-flow shifts replace obsolete times with an explanatory state',()=>{
+  const ui=launch(),day=ui.card('day');
+  day.querySelector('.rate-input').value='0';day.querySelector('.apply-rate').emit('click');
+  assert.match(day.querySelector('.replacement-times').textContent,/流速為 0/);
+  ui.get('change-time').value='12';ui.get('change-time').emit('input');
+  assert.equal(day.querySelector('.replacement-times').textContent,'本班已結束');
+  assert.equal(ui.card('evening').querySelector('.replacement-times').textContent,'約 20:27');
 });

@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { calculate, timeLabel, parseRate } = require('../calculator.js');
+const { calculate, timeLabel, replacementTimeLabel, parseRate } = require('../calculator.js');
 const base = { currentRate: 80, targetBags: 4, elapsedHours: 4 };
 const rates = result => result.plans.map(plan => plan.rate);
 
@@ -149,4 +149,51 @@ test('past handovers are marked as historical estimates and ignore future overri
   assert.equal(r.handovers[0].cumulativeVolume,640);
   assert.equal(r.handovers[0].bagVolume,360);
   assert.equal(r.handovers[1].isPast,false);
+});
+test('replacement forecasts carry the partial bag across all three shifts',()=>{
+  const r=calculate(base);
+  assert.deepEqual(r.plans.map(p=>p.replacementTimes.map(replacementTimeLabel)),[['14:08'],['20:05'],['隔日 02:02']]);
+  assert.ok(Math.abs(r.plans[0].replacementTimes[0]-(4+180/84))<1e-10);
+});
+test('manual day changes update subsequent replacement times using the remaining bag',()=>{
+  const r=calculate({...base,overrides:{day:100}});
+  assert.deepEqual(r.plans.map(p=>p.replacementTimes.map(replacementTimeLabel)),[['13:48'],['19:30'],['隔日 01:45']]);
+});
+test('a replacement exactly at a handover belongs only to the following shift',()=>{
+  const r=calculate({currentRate:80,targetBags:6,elapsedHours:0});
+  assert.deepEqual(r.plans.map(p=>p.replacementTimes.map(replacementTimeLabel)),[['12:00'],['16:00','20:00'],['24:00','隔日 04:00']]);
+  assert.equal(r.plans.flatMap(p=>p.replacementTimes).filter(t=>t===8).length,1);
+  assert.ok(r.plans.every(p=>p.replacementTimes.every(t=>t<24)));
+});
+test('an empty bag at the selected change time is replaced immediately once',()=>{
+  const r=calculate({currentRate:125,targetBags:4,elapsedHours:4});
+  assert.equal(r.infusedVolume,500);
+  assert.equal(r.plans[0].replacementTimes[0],4);
+  assert.equal(replacementTimeLabel(r.plans[0].replacementTimes[0]),'12:00');
+});
+test('zero flow defers replacement of an empty bag until delivery resumes',()=>{
+  const r=calculate({currentRate:80,targetBags:4,elapsedHours:0,overrides:{day:125,evening:0,night:125}});
+  assert.deepEqual(r.plans[1].replacementTimes,[]);
+  assert.equal(r.plans[2].replacementTimes[0],16);
+});
+test('no replacement is forecast for ended shifts, exceeded targets or insufficient delivery',()=>{
+  const ended=calculate({...base,elapsedHours:24});
+  assert.ok(ended.plans.every(p=>p.replacementTimes.length===0));
+  const exceeded=calculate({currentRate:500,targetBags:0.5,elapsedHours:1});
+  assert.ok(exceeded.plans.every(p=>p.replacementTimes.length===0));
+  const low=calculate({currentRate:5,targetBags:0.5,elapsedHours:0});
+  assert.ok(low.plans.every(p=>p.replacementTimes.length===0));
+});
+test('replacement forecasting handles huge manual values with a bounded list and explicit count',()=>{
+  const r=calculate({...base,overrides:{day:1e9}}),day=r.plans[0];
+  assert.equal(day.replacementTimes.length,32);
+  assert.ok(day.omittedReplacementCount>0);
+  assert.equal(day.replacementTimes.length+day.omittedReplacementCount,day.replacementCount);
+});
+test('fractional forecast times round down to minutes and mark midnight/next day',()=>{
+  assert.equal(replacementTimeLabel(4.999),'12:59');
+  assert.equal(replacementTimeLabel(8),'16:00');
+  assert.equal(replacementTimeLabel(16),'24:00');
+  assert.equal(replacementTimeLabel(17.5),'隔日 01:30');
+  for(const value of [-1,25,NaN,Infinity])assert.throws(()=>replacementTimeLabel(value));
 });
